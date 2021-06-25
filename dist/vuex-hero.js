@@ -1,5 +1,5 @@
 /*!
- * vuex-proxy v1.0.3
+ * vuex-proxy v1.0.2
  * (c) 2021 Logan
  * @license MIT
  */
