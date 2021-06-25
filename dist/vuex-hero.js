@@ -1,13 +1,17 @@
 /*!
- * vuex-proxy v1.0.0
+ * vuex-proxy v1.0.3
  * (c) 2021 Logan
  * @license MIT
  */
 (function (global, factory) {
-  typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
-  typeof define === 'function' && define.amd ? define(['exports'], factory) :
-  (global = typeof globalThis !== 'undefined' ? globalThis : global || self, factory(global.VuexHero = {}));
-}(this, (function (exports) { 'use strict';
+  typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports, require('assert')) :
+  typeof define === 'function' && define.amd ? define(['exports', 'assert'], factory) :
+  (global = typeof globalThis !== 'undefined' ? globalThis : global || self, factory(global.VuexHero = {}, global.assert));
+}(this, (function (exports, assert) { 'use strict';
+
+  function _interopDefaultLegacy (e) { return e && typeof e === 'object' && 'default' in e ? e : { 'default': e }; }
+
+  var assert__default = /*#__PURE__*/_interopDefaultLegacy(assert);
 
   function _extends() {
     _extends = Object.assign || function (target) {
@@ -1489,6 +1493,8 @@
   function _classExtractFieldDescriptor(receiver, privateMap, action) { if (!privateMap.has(receiver)) { throw new TypeError("attempted to " + action + " private field on non-instance"); } return privateMap.get(receiver); }
 
   function _classApplyDescriptorSet(receiver, descriptor, value) { if (descriptor.set) { descriptor.set.call(receiver, value); } else { if (!descriptor.writable) { throw new TypeError("attempted to set read only private field"); } descriptor.value = value; } }
+
+  function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
   var rootStore = null;
 
   var _operations = new WeakMap();
@@ -1525,11 +1531,13 @@
   function ruleOrCB2CallBack(ruleOrCB) {
     if (typeof ruleOrCB === 'function') { return ruleOrCB; }
     var rule = ruleOrCB;
-    return function (newVal, setState, state, rootState) {
+    return function (_ref) {
+      var value = _ref.value,
+          setState = _ref.setState;
       new Schema({
         value: rule
       }).validate({
-        value: newVal
+        value: value
       }, {
         suppressWarning: true
       }, function (errors, fields) {
@@ -1547,8 +1555,29 @@
   function createVuexHero(store) {
     rootStore = store;
   }
+
+  function checkFn(fn) {
+    assert__default['default'](typeof fn === 'function', 'callback must be a function'); // console.assert(typeof fn !== 'function', 'callback must be a function')
+  }
+
+  function checkGetter(getter) {
+    assert__default['default'](typeof getter === 'function', 'getter must be a function'); // console.assert(!getter || typeof getter !== 'function', 'getter must be a function')
+  }
+
+  function checkExpOrFn(expOrFn) {
+    var type = _typeof(expOrFn);
+
+    assert__default['default'](type === 'function' || type === 'string', 'expOrFn must be a string or function'); // console.assert(!(type === 'function' || type === 'string'), 'expOrFn must be a string or function')
+  }
+
+  function checkRuleOrCB(ruleOrCallBack) {
+    var type = _typeof(ruleOrCallBack);
+
+    assert__default['default'](type === 'function' || type === 'object', 'expOrFn must be a object or function'); // console.assert(!(type === 'function' || type === 'object'), 'expOrFn must be a object or function')
+  }
+
   function createModule(path, module) {
-    if (!rootStore) { throw new Error("\u8BF7\u5148\u8C03\u7528'createVuexHero'\u65B9\u6CD5"); }
+    if (!rootStore) { throw new Error("please call 'createVuexHero' first"); }
 
     var _form = /*#__PURE__*/new WeakMap();
 
@@ -1680,15 +1709,20 @@
                   getter = _formTeam$key.getter,
                   callBack = _formTeam$key.callBack;
               promiseArr.push(new Promise(function (resolve, reject) {
-                callBack(getter(_this2.state, _this2.store.state), function (result) {
-                  _this2.state[key] = result;
+                callBack({
+                  value: getter(_this2.state, _this2.store.state),
+                  setState: function setState(result) {
+                    _this2.state[key] = result;
 
-                  if (result) {
-                    reject();
-                  } else {
-                    resolve();
-                  }
-                }, _this2.state, _this2.store.state);
+                    if (result) {
+                      reject();
+                    } else {
+                      resolve();
+                    }
+                  },
+                  state: _this2.state,
+                  rootState: _this2.store.state
+                });
               }));
             });
           });
@@ -1755,7 +1789,11 @@
              * */
 
             if (options.isLoad) {
-              callBack(_this4.state, rootState, setState);
+              callBack({
+                state: _this4.state,
+                rootState: rootState,
+                setState: setState
+              });
               return;
             }
             /**
@@ -1771,28 +1809,37 @@
               };
             }
             /**
-             * watch listen
+             * watch
              * */
+            // 解决unwatch可能为undefined问题
 
+
+            var stopCall = false;
+
+            var preUnwatch = function preUnwatch() {
+              stopCall = true;
+
+              if (unwatch) {
+                unwatch();
+              } else {
+                setTimeout(function () {
+                  preUnwatch();
+                }, 0);
+              }
+            };
 
             var unwatch = _this4.store.watch(function () {
               return getter(_this4.state, rootState);
             }, function (newVal, oldVal) {
-              var actuator = function actuator() {
-                if (options.isValidation) {
-                  callBack(newVal, setState, _this4.state, rootState, unwatch);
-                } else {
-                  callBack(newVal, oldVal, setState, _this4.state, rootState, unwatch);
-                }
-              };
-
-              if (!unwatch) {
-                setTimeout(function () {
-                  actuator();
-                }, 0);
-              } else {
-                actuator();
-              }
+              if (stopCall) { return; }
+              callBack({
+                value: newVal,
+                oldVal: oldVal,
+                setState: setState,
+                state: _this4.state,
+                rootState: rootState,
+                unwatch: preUnwatch
+              });
             }, options);
 
             _classPrivateFieldGet(_this4, _unwatches).push(unwatch);
@@ -1814,6 +1861,7 @@
     _createClass(h, [{
       key: "load",
       value: function load(callBack) {
+        checkFn(callBack);
         pushOperation(this, {
           callBack: callBack,
           options: {
@@ -1829,10 +1877,13 @@
           immediate: true,
           deep: false
         };
+        checkGetter(_getter);
         pushOperation(this, {
           getter: _getter,
-          callBack: function callBack(newVal, oldVal, setState) {
-            setState(newVal);
+          callBack: function callBack(_ref2) {
+            var value = _ref2.value,
+                setState = _ref2.setState;
+            setState(value);
           },
           options: _objectSpread(_objectSpread({}, options), {}, {
             isGetter: true
@@ -1847,6 +1898,8 @@
           immediate: true,
           deep: false
         };
+        checkExpOrFn(expOrFn);
+        checkFn(callBack);
         pushOperation(this, {
           getter: expOrFn2Getter(expOrFn),
           callBack: callBack,
@@ -1855,12 +1908,13 @@
         return this;
       }
     }, {
-      key: "listen",
-      value: function listen(callBack) {
+      key: "watchSelf",
+      value: function watchSelf(callBack) {
         var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {
           immediate: true,
           deep: false
         };
+        checkFn(callBack);
         pushOperation(this, {
           callBack: callBack,
           options: options
@@ -1870,6 +1924,8 @@
     }, {
       key: "validate",
       value: function validate(expOrFn, ruleOrCallBack, formName) {
+        checkExpOrFn(expOrFn);
+        checkRuleOrCB(ruleOrCallBack);
         pushOperation(this, {
           getter: expOrFn2Getter(expOrFn),
           callBack: ruleOrCB2CallBack(ruleOrCallBack),
@@ -1885,16 +1941,20 @@
     }], [{
       key: "init",
       value: function init(initValue) {
+        assert__default['default'](initValue !== undefined, 'initValue can\'t be undefined'); // console.assert(initValue === undefined, 'initValue can\'t be undefined')
+
         return new h(initValue);
       }
     }, {
-      key: "srtLoad",
-      value: function srtLoad(callBack) {
+      key: "strLoad",
+      value: function strLoad(callBack) {
+        checkFn(callBack);
         return new h('').load(callBack);
       }
     }, {
       key: "arrLoad",
       value: function arrLoad(callBack) {
+        checkFn(callBack);
         return new h([]).load(callBack);
       }
     }, {
@@ -1904,6 +1964,7 @@
           immediate: true,
           deep: false
         };
+        checkGetter(getter);
         return new h('').getter(getter, options);
       }
     }, {
@@ -1913,6 +1974,7 @@
           immediate: true,
           deep: false
         };
+        checkGetter(getter);
         return new h([]).getter(getter, options);
       }
     }, {
@@ -1922,6 +1984,8 @@
           immediate: true,
           deep: false
         };
+        checkExpOrFn(expOrFn);
+        checkFn(callBack);
         return new h('').watch(expOrFn, callBack, options);
       }
     }, {
@@ -1931,21 +1995,27 @@
           immediate: true,
           deep: false
         };
+        checkExpOrFn(expOrFn);
+        checkFn(callBack);
         return new h([]).watch(expOrFn, callBack, options);
       }
     }, {
-      key: "strListen",
-      value: function strListen(callBack) {
-        return new h('').listen(callBack);
+      key: "strWatchSelf",
+      value: function strWatchSelf(callBack) {
+        checkFn(callBack);
+        return new h('').watchSelf(callBack);
       }
     }, {
-      key: "arrListen",
-      value: function arrListen(callBack) {
-        return new h([]).listen(callBack);
+      key: "arrWatchSelf",
+      value: function arrWatchSelf(callBack) {
+        checkFn(callBack);
+        return new h([]).watchSelf(callBack);
       }
     }, {
       key: "strValidate",
       value: function strValidate(expOrFn, ruleOrCallBack, formName) {
+        checkExpOrFn(expOrFn);
+        checkRuleOrCB(ruleOrCallBack);
         return new h('').validate(expOrFn, ruleOrCallBack, formName);
       }
     }]);

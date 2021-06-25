@@ -1,4 +1,5 @@
 import Schema from 'async-validator';
+import assert from 'assert'
 
 let rootStore = null
 
@@ -35,8 +36,8 @@ function expOrFn2Getter(expOrFn) {
 function ruleOrCB2CallBack(ruleOrCB) {
     if (typeof ruleOrCB === 'function') return ruleOrCB;
     let rule = ruleOrCB;
-    return (newVal, setState, state, rootState) => {
-        (new Schema({value: rule})).validate({value: newVal}, {suppressWarning: true}, (errors, fields) => {
+    return ({value, setState}) => {
+        (new Schema({value: rule})).validate({value: value}, {suppressWarning: true}, (errors, fields) => {
             let errorMessage = ''
             if (errors) {
                 errorMessage = errors[0].message
@@ -50,8 +51,30 @@ export function createVuexHero(store) {
     rootStore = store;
 }
 
+function checkFn(fn) {
+    assert(typeof fn === 'function', 'callback must be a function')
+    // console.assert(typeof fn !== 'function', 'callback must be a function')
+}
+
+function checkGetter(getter) {
+    assert(typeof getter === 'function', 'getter must be a function')
+    // console.assert(!getter || typeof getter !== 'function', 'getter must be a function')
+}
+
+function checkExpOrFn(expOrFn) {
+    const type = typeof expOrFn
+    assert((type === 'function' || type === 'string'), 'expOrFn must be a string or function')
+    // console.assert(!(type === 'function' || type === 'string'), 'expOrFn must be a string or function')
+}
+
+function checkRuleOrCB(ruleOrCallBack) {
+    const type = typeof ruleOrCallBack
+    assert((type === 'function' || type === 'object'), 'expOrFn must be a object or function')
+    // console.assert(!(type === 'function' || type === 'object'), 'expOrFn must be a object or function')
+}
+
 export function createModule(path, module) {
-    if (!rootStore) throw new Error(`请先调用'createVuexHero'方法`);
+    if (!rootStore) throw new Error(`please call 'createVuexHero' first`);
 
     class Module {
         #form = {}
@@ -113,7 +136,7 @@ export function createModule(path, module) {
                                  * load
                                  * */
                                 if (options.isLoad) {
-                                    callBack(this.state, rootState, setState)
+                                    callBack({state: this.state, rootState, setState})
                                     return
                                 }
 
@@ -126,27 +149,36 @@ export function createModule(path, module) {
                                 }
 
                                 /**
-                                 * watch listen
+                                 * watch
                                  * */
+
+                                // 解决unwatch可能为undefined问题
+                                let stopCall = false;
+                                const preUnwatch = () => {
+                                    stopCall = true
+                                    if (unwatch) {
+                                        unwatch()
+                                    } else {
+                                        setTimeout(() => {
+                                            preUnwatch()
+                                        }, 0)
+                                    }
+                                }
+
                                 const unwatch = this.store.watch(
                                         () => {
                                             return getter(this.state, rootState)
                                         },
                                         (newVal, oldVal) => {
-                                            let actuator = () => {
-                                                if (options.isValidation) {
-                                                    callBack(newVal, setState, this.state, rootState, unwatch)
-                                                } else {
-                                                    callBack(newVal, oldVal, setState, this.state, rootState, unwatch)
-                                                }
-                                            }
-                                            if (!unwatch) {
-                                                setTimeout(() => {
-                                                    actuator()
-                                                }, 0)
-                                            } else {
-                                                actuator()
-                                            }
+                                            if (stopCall) return
+                                            callBack({
+                                                value: newVal,
+                                                oldVal,
+                                                setState,
+                                                state: this.state,
+                                                rootState,
+                                                unwatch: preUnwatch
+                                            })
                                         },
                                         options
                                 )
@@ -200,16 +232,19 @@ export function createModule(path, module) {
                 Object.keys(formTeam).forEach((key) => {
                     const {getter, callBack} = formTeam[key]
                     promiseArr.push(new Promise((resolve, reject) => {
-                        callBack(
-                                getter(this.state, this.store.state),
-                                (result) => {
-                                    this.state[key] = result
-                                    if (result) {
-                                        reject()
-                                    } else {
-                                        resolve()
-                                    }
-                                }, this.state, this.store.state)
+                        callBack({
+                            value: getter(this.state, this.store.state),
+                            setState: (result) => {
+                                this.state[key] = result
+                                if (result) {
+                                    reject()
+                                } else {
+                                    resolve()
+                                }
+                            },
+                            state: this.state,
+                            rootState: this.store.state
+                        })
                     }))
                 })
             })
@@ -226,42 +261,56 @@ export function createModule(path, module) {
 
 class h {
     static init(initValue) {
+        assert(initValue !== undefined, 'initValue can\'t be undefined')
+        // console.assert(initValue === undefined, 'initValue can\'t be undefined')
         return new h(initValue)
     }
 
-    static srtLoad(callBack) {
+    static strLoad(callBack) {
+        checkFn(callBack)
         return new h('').load(callBack)
     }
 
     static arrLoad(callBack) {
+        checkFn(callBack)
         return new h([]).load(callBack)
     }
 
     static strGetter(getter, options = {immediate: true, deep: false}) {
+        checkGetter(getter)
         return new h('').getter(getter, options)
     }
 
     static arrGetter(getter, options = {immediate: true, deep: false}) {
+        checkGetter(getter)
         return new h([]).getter(getter, options)
     }
 
     static strWatch(expOrFn, callBack, options = {immediate: true, deep: false}) {
+        checkExpOrFn(expOrFn)
+        checkFn(callBack)
         return new h('').watch(expOrFn, callBack, options)
     }
 
     static arrWatch(expOrFn, callBack, options = {immediate: true, deep: false}) {
+        checkExpOrFn(expOrFn)
+        checkFn(callBack)
         return new h([]).watch(expOrFn, callBack, options)
     }
 
-    static strListen(callBack, options = {immediate: true, deep: false}) {
-        return new h('').listen(callBack)
+    static strWatchSelf(callBack, options = {immediate: true, deep: false}) {
+        checkFn(callBack)
+        return new h('').watchSelf(callBack)
     }
 
-    static arrListen(callBack, options = {immediate: true, deep: false}) {
-        return new h([]).listen(callBack)
+    static arrWatchSelf(callBack, options = {immediate: true, deep: false}) {
+        checkFn(callBack)
+        return new h([]).watchSelf(callBack)
     }
 
     static strValidate(expOrFn, ruleOrCallBack, formName) {
+        checkExpOrFn(expOrFn)
+        checkRuleOrCB(ruleOrCallBack)
         return new h('').validate(expOrFn, ruleOrCallBack, formName)
     }
 
@@ -270,27 +319,32 @@ class h {
     }
 
     load(callBack) {
+        checkFn(callBack)
         pushOperation(this, {callBack, options: {isLoad: true}})
         return this;
     }
 
     getter(getter, options = {immediate: true, deep: false}) {
+        checkGetter(getter)
         pushOperation(this, {
-            getter, callBack: (newVal, oldVal, setState) => {
-                setState(newVal)
+            getter, callBack: ({value, setState}) => {
+                setState(value)
             }, options: {...options, isGetter: true}
         })
         return this;
     }
 
     watch(expOrFn, callBack, options = {immediate: true, deep: false}) {
+        checkExpOrFn(expOrFn)
+        checkFn(callBack)
         pushOperation(this, {
             getter: expOrFn2Getter(expOrFn), callBack, options
         })
         return this;
     }
 
-    listen(callBack, options = {immediate: true, deep: false}) {
+    watchSelf(callBack, options = {immediate: true, deep: false}) {
+        checkFn(callBack)
         pushOperation(this, {
             callBack, options
         })
@@ -298,6 +352,8 @@ class h {
     }
 
     validate(expOrFn, ruleOrCallBack, formName) {
+        checkExpOrFn(expOrFn)
+        checkRuleOrCB(ruleOrCallBack)
         pushOperation(this, {
             getter: expOrFn2Getter(expOrFn),
             callBack: ruleOrCB2CallBack(ruleOrCallBack),
