@@ -315,6 +315,7 @@ class h {
     }
 
     constructor(initValue) {
+        assert(initValue !== undefined, 'initValue can\'t be undefined')
         this._initValue = initValue;
     }
 
