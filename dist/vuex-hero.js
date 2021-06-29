@@ -1,5 +1,5 @@
 /*!
- * vuex-proxy v1.0.5
+ * vuex-proxy v1.0.6
  * (c) 2021 Logan
  * @license MIT
  */
@@ -1523,6 +1523,15 @@
           return state[expOrFn];
         };
       }
+    } else if (Array.isArray(expOrFn)) {
+      var callBacks = expOrFn.map(function (exp) {
+        return expOrFn2Getter(exp);
+      });
+      return function (state, rooState) {
+        return callBacks.map(function (getter) {
+          return getter(state, rooState);
+        });
+      };
     } else {
       return expOrFn;
     }
@@ -1557,23 +1566,29 @@
   }
 
   function checkFn(fn) {
-    assert__default['default'](typeof fn === 'function', 'callback must be a function'); // console.assert(typeof fn !== 'function', 'callback must be a function')
+    assert__default['default'](typeof fn === 'function', 'callback must be a function');
   }
 
   function checkGetter(getter) {
-    assert__default['default'](typeof getter === 'function', 'getter must be a function'); // console.assert(!getter || typeof getter !== 'function', 'getter must be a function')
+    assert__default['default'](typeof getter === 'function', 'getter must be a function');
   }
 
-  function checkExpOrFn(expOrFn) {
-    var type = _typeof(expOrFn);
+  function checkExpOrFn(expOrFn, isDeep) {
+    if (!isDeep && Array.isArray(expOrFn)) {
+      expOrFn.forEach(function (item) {
+        checkExpOrFn(item, true);
+      });
+    } else {
+      var type = _typeof(expOrFn);
 
-    assert__default['default'](type === 'function' || type === 'string', 'expOrFn must be a string or function'); // console.assert(!(type === 'function' || type === 'string'), 'expOrFn must be a string or function')
+      assert__default['default'](type === 'function' || type === 'string', 'expOrFn must be a string or function or array');
+    }
   }
 
   function checkRuleOrCB(ruleOrCallBack) {
     var type = _typeof(ruleOrCallBack);
 
-    assert__default['default'](type === 'function' || type === 'object', 'expOrFn must be a object or function'); // console.assert(!(type === 'function' || type === 'object'), 'expOrFn must be a object or function')
+    assert__default['default'](type === 'function' || type === 'object', 'expOrFn must be a object or function');
   }
 
   function createModule(path, module) {
@@ -1942,8 +1957,7 @@
     }], [{
       key: "init",
       value: function init(initValue) {
-        assert__default['default'](initValue !== undefined, 'initValue can\'t be undefined'); // console.assert(initValue === undefined, 'initValue can\'t be undefined')
-
+        assert__default['default'](initValue !== undefined, 'initValue can\'t be undefined');
         return new h(initValue);
       }
     }, {
