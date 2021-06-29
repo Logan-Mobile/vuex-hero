@@ -14,6 +14,14 @@ export interface WatchOptions {
 
 type Rule = object
 
+export interface Module {
+    state: object,
+    store: object,
+    registerModule: (replace: boolean) => Module,
+    unregisterModule: () => Module,
+    validate: (formName: string | ((result) => void), validateCB: ((result) => void)) => void,
+}
+
 declare class h {
     static init(initValue: any): h
 
@@ -48,6 +56,6 @@ declare class h {
 
 export declare function createVuexHero(store: object): void
 
-export declare function createModule(path: string | [], module: object): object
+export declare function createModule(path: string | [], module: object): Module
 
 export default h;

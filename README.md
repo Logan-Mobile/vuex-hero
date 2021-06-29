@@ -137,7 +137,7 @@ export default {
 - `store`根store
 
 ## h
-为state添加监听方法，设置初始化值。
+为state添加监听方法，设置初始化值，支持链式调用。
 
 #### h实例方法
 ###### `watch(expOrFn, callBack, options = {immediate: true, deep: false})`
@@ -159,7 +159,7 @@ const module = createModule('test', {
         setState(`当前统计文字共计${value.length}个`)
     }),
     length2: h.init(0).watch((state,rootState) =>{return state.info},({value,setState}) =>{
-        // 所以此处 value 是 expOfFn 的返回值
+        // 此处 value 是 expOfFn 的返回值
         setState(`当前统计文字共计${value.length}个`)
     }),
   }
@@ -172,7 +172,9 @@ const module = createModule('test', {
 ```js
 const module = createModule('test', {
   state: {
-    info: h.init('').watchSelf(({value,setState}) => {
+    info: h.init('').load(({setState, state, rootState}) => {    
+        setTimeout(() => {setState('大家好，我叫张三')},1000)
+    }).watchSelf(({value,setState}) => {
         // watchSelf中调用setState一定要有判断逻辑，否则会死循环。
         // 限制info最大长度
         if(value.lenght > 200) setState(value.substring(0,200));
