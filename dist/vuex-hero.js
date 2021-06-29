@@ -1,5 +1,5 @@
 /*!
- * vuex-proxy v1.0.6
+ * vuex-proxy v1.0.7
  * (c) 2021 Logan
  * @license MIT
  */
@@ -1474,25 +1474,25 @@
   var arguments$1 = arguments;
    for (var i = 1; i < arguments.length; i++) { var source = arguments$1[i] != null ? arguments$1[i] : {}; if (i % 2) { ownKeys(Object(source), true).forEach(function (key) { _defineProperty(target, key, source[key]); }); } else if (Object.getOwnPropertyDescriptors) { Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)); } else { ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } } return target; }
 
-  function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
-
   function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
   function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) { descriptor.writable = true; } Object.defineProperty(target, descriptor.key, descriptor); } }
 
   function _createClass(Constructor, protoProps, staticProps) { if (protoProps) { _defineProperties(Constructor.prototype, protoProps); } if (staticProps) { _defineProperties(Constructor, staticProps); } return Constructor; }
 
+  function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
+  function _classPrivateFieldSet(receiver, privateMap, value) { var descriptor = _classExtractFieldDescriptor(receiver, privateMap, "set"); _classApplyDescriptorSet(receiver, descriptor, value); return value; }
+
+  function _classApplyDescriptorSet(receiver, descriptor, value) { if (descriptor.set) { descriptor.set.call(receiver, value); } else { if (!descriptor.writable) { throw new TypeError("attempted to set read only private field"); } descriptor.value = value; } }
+
   function _classPrivateFieldGet(receiver, privateMap) { var descriptor = _classExtractFieldDescriptor(receiver, privateMap, "get"); return _classApplyDescriptorGet(receiver, descriptor); }
+
+  function _classExtractFieldDescriptor(receiver, privateMap, action) { if (!privateMap.has(receiver)) { throw new TypeError("attempted to " + action + " private field on non-instance"); } return privateMap.get(receiver); }
 
   function _classApplyDescriptorGet(receiver, descriptor) { if (descriptor.get) { return descriptor.get.call(receiver); } return descriptor.value; }
 
   function _classPrivateMethodGet(receiver, privateSet, fn) { if (!privateSet.has(receiver)) { throw new TypeError("attempted to get private field on non-instance"); } return fn; }
-
-  function _classPrivateFieldSet(receiver, privateMap, value) { var descriptor = _classExtractFieldDescriptor(receiver, privateMap, "set"); _classApplyDescriptorSet(receiver, descriptor, value); return value; }
-
-  function _classExtractFieldDescriptor(receiver, privateMap, action) { if (!privateMap.has(receiver)) { throw new TypeError("attempted to " + action + " private field on non-instance"); } return privateMap.get(receiver); }
-
-  function _classApplyDescriptorSet(receiver, descriptor, value) { if (descriptor.set) { descriptor.set.call(receiver, value); } else { if (!descriptor.writable) { throw new TypeError("attempted to set read only private field"); } descriptor.value = value; } }
 
   function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
   var rootStore = null;
@@ -1594,11 +1594,11 @@
   function createModule(path, module) {
     if (!rootStore) { throw new Error("please call 'createVuexHero' first"); }
 
+    var _path = /*#__PURE__*/new WeakMap();
+
     var _form = /*#__PURE__*/new WeakMap();
 
     var _module = /*#__PURE__*/new WeakMap();
-
-    var _path = /*#__PURE__*/new WeakMap();
 
     var _unwatches = /*#__PURE__*/new WeakMap();
 
@@ -1606,17 +1606,26 @@
 
     var _subModules = /*#__PURE__*/new WeakMap();
 
+    var _init = /*#__PURE__*/new WeakSet();
+
     var _initModule = /*#__PURE__*/new WeakSet();
 
     var _beginObserve = /*#__PURE__*/new WeakSet();
 
     var Module = /*#__PURE__*/function () {
-      function Module(path, _module2) {
+      function Module(_path2, _module2) {
         _classCallCheck(this, Module);
 
         _beginObserve.add(this);
 
         _initModule.add(this);
+
+        _init.add(this);
+
+        _path.set(this, {
+          writable: true,
+          value: ''
+        });
 
         _form.set(this, {
           writable: true,
@@ -1626,11 +1635,6 @@
         _module.set(this, {
           writable: true,
           value: {}
-        });
-
-        _path.set(this, {
-          writable: true,
-          value: ''
         });
 
         _unwatches.set(this, {
@@ -1648,11 +1652,27 @@
           value: []
         });
 
-        _classPrivateFieldSet(this, _path, Array.isArray(path) ? path : path.split('.'));
+        _defineProperty(this, "state", {});
 
-        this.state = {};
+        _classPrivateMethodGet(this, _init, _init2).call(this, _path2, _module2);
 
-        _classPrivateMethodGet(this, _initModule, _initModule2).call(this, _module2);
+        this.unregisterModule = function () {
+          if (this.store.hasModule(_classPrivateFieldGet(this, _path))) {
+            _classPrivateFieldGet(this, _subModules).forEach(function (subM) {
+              return subM.unregisterModule();
+            });
+
+            _classPrivateFieldGet(this, _unwatches).forEach(function (unwatch) {
+              unwatch();
+            });
+
+            this.store.unregisterModule(_classPrivateFieldGet(this, _path));
+          }
+
+          _classPrivateMethodGet(this, _init, _init2).call(this, _path2, _module2);
+
+          return this;
+        };
       }
 
       _createClass(Module, [{
@@ -1682,23 +1702,6 @@
             if (!this.store.hasModule(_classPrivateFieldGet(this, _path))) {
               register();
             }
-          }
-
-          return this;
-        }
-      }, {
-        key: "unregisterModule",
-        value: function unregisterModule() {
-          if (this.store.hasModule(_classPrivateFieldGet(this, _path))) {
-            _classPrivateFieldGet(this, _subModules).forEach(function (subM) {
-              return subM.unregisterModule();
-            });
-
-            _classPrivateFieldGet(this, _unwatches).forEach(function (unwatch) {
-              unwatch();
-            });
-
-            this.store.unregisterModule(_classPrivateFieldGet(this, _path));
           }
 
           return this;
@@ -1751,6 +1754,26 @@
 
       return Module;
     }();
+
+    function _init2(path, module) {
+      _classPrivateFieldSet(this, _path, '');
+
+      _classPrivateFieldSet(this, _form, {});
+
+      _classPrivateFieldSet(this, _module, {});
+
+      _classPrivateFieldSet(this, _unwatches, []);
+
+      _classPrivateFieldSet(this, _observers, {});
+
+      _classPrivateFieldSet(this, _subModules, []);
+
+      this.state = {};
+
+      _classPrivateFieldSet(this, _path, Array.isArray(path) ? path : path.split('.'));
+
+      _classPrivateMethodGet(this, _initModule, _initModule2).call(this, module);
+    }
 
     function _initModule2(module) {
       var _this3 = this;
