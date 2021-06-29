@@ -1,5 +1,5 @@
 /*!
- * vuex-proxy v1.0.2
+ * vuex-proxy v1.0.5
  * (c) 2021 Logan
  * @license MIT
  */
@@ -1855,6 +1855,7 @@
     function h(initValue) {
       _classCallCheck(this, h);
 
+      assert__default['default'](initValue !== undefined, 'initValue can\'t be undefined');
       this._initValue = initValue;
     }
 
