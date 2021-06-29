@@ -33,25 +33,25 @@ declare class h {
 
     static arrGetter<S extends object, T extends any>(getter: (state: S, rootState: S) => T, options?: WatchOptions): h
 
-    static strWatch<S extends object, T extends any>(expOrFn: ((state: S, rootState: S) => T) | string, cb: (alley: Alley) => void, options?: WatchOptions): h
+    static strWatch<S extends object, T extends any>(expOrFn: ((state: S, rootState: S) => T) | string | [], cb: (alley: Alley) => void, options?: WatchOptions): h
 
-    static arrWatch<S extends object, T extends any>(expOrFn: ((state: S, rootState: S) => T) | string, cb: (alley: Alley) => void, options?: WatchOptions): h
+    static arrWatch<S extends object, T extends any>(expOrFn: ((state: S, rootState: S) => T) | string | [], cb: (alley: Alley) => void, options?: WatchOptions): h
 
     static strWatchSelf<S extends object, T extends any>(cb: (alley: Alley) => void, options?: WatchOptions): h
 
     static arrWatchSelf<S extends object, T extends any>(cb: (alley: Alley) => void, options?: WatchOptions): h
 
-    static strValidate<S extends object, T extends any>(expOrFn: ((state: S, rootState: S) => T) | string, ruleOrCallBack: (alley: Alley) => void | Rule, formName?: string): h
+    static strValidate<S extends object, T extends any>(expOrFn: ((state: S, rootState: S) => T) | string | [], ruleOrCallBack: (alley: Alley) => void | Rule, formName?: string): h
 
     load<S extends object, T extends any>(cb: (alley: Alley) => void): h
 
     getter<S extends object, T extends any>(getter: (state: S, rootState: S) => T, options?: WatchOptions): h
 
-    watch<S extends object, T extends any>(expOrFn: ((state: S, rootState: S) => T) | string, cb: (alley: Alley) => void, options?: WatchOptions): h;
+    watch<S extends object, T extends any>(expOrFn: ((state: S, rootState: S) => T) | string | [], cb: (alley: Alley) => void, options?: WatchOptions): h;
 
     watchSelf<S extends object, T extends any>(cb: (alley: Alley) => void, options?: WatchOptions): h;
 
-    validate<S extends object, T extends any>(expOrFn: ((state: S, rootState: S) => T) | string, ruleOrCB: (alley: Alley) => void | Rule, options?: WatchOptions): h;
+    validate<S extends object, T extends any>(expOrFn: ((state: S, rootState: S) => T) | string | [], ruleOrCB: (alley: Alley) => void | Rule, options?: WatchOptions): h;
 }
 
 export declare function createVuexHero(store: object): void

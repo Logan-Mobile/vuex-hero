@@ -142,7 +142,7 @@ export default {
 #### h实例方法
 ###### `watch(expOrFn, callBack, options = {immediate: true, deep: false})`
 - 核心api，本质是调用 [Vuex.Store.watch](https://vuex.vuejs.org/zh/api/#watch) 方法。
-- `expOrFn`需要监听的state，可以是字符串或者回调方法，参考下面例子。
+- `expOrFn`需要监听的state，可以是字符串或者回调函数或者是字符串和回调函数组成的数组，参考下面例子。
 - `callback`回调函数，参数为：`{value,oldVal,setState,state,rootState,unwatch}` 对象
 - `options`可选，请参考 [Vuex.Store.watch](https://vuex.vuejs.org/zh/api/#watch) 
 ```js
@@ -150,6 +150,7 @@ const module = createModule('test', {
   state: {
     // 初始化值是个空字符串
     info: h.init(''),
+    address:'',
     length: h.init(0).watch('info',({value,setState}) =>{
         // 监听info变量，所以此处 value 就是 info
         setState(`当前统计文字共计${value.length}个`)
@@ -161,6 +162,10 @@ const module = createModule('test', {
     length2: h.init(0).watch((state,rootState) =>{return state.info},({value,setState}) =>{
         // 此处 value 是 expOfFn 的返回值
         setState(`当前统计文字共计${value.length}个`)
+    }),
+    length3: h.init(0).watch(['info','address'],({value,setState}) =>{
+        // 此处 value 是info和address组成的数组
+        setState(`当前统计文字共计${value[0].length + value[1].length}个`)
     }),
   }
 })

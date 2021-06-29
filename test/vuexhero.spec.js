@@ -64,6 +64,25 @@ test('watch params', () => {
         expect(!!e).toBe(true);
     }
     try {
+        createModule('watchParams1-1', {
+            state: {
+                a: h.init('').watch([[]], 'callback')
+            }
+        })
+        createModule('watchParams1-2', {
+            state: {
+                a: h.init('').watch([{}], 'callback')
+            }
+        })
+        createModule('watchParams1-3', {
+            state: {
+                a: h.init('').watch([12], 'callback')
+            }
+        })
+    } catch (e) {
+        expect(!!e).toBe(true);
+    }
+    try {
         createModule('watchParams2', {
             state: {
                 a: h.init('').watch('a', 'callback')
@@ -106,6 +125,24 @@ test('watch with getter', async () => {
                 }, ({state, rootState, setState, value, oldVal}) => {
                     setState(2)
                     expect(module.state.b).toBe(2)
+                    resolve()
+                }),
+            }
+        })
+        module.registerModule()
+    })
+})
+
+test('watch with array', async () => {
+    return new Promise((resolve) => {
+        const module = createModule('testWatch2', {
+            state: {
+                a: 1,
+                b: 2,
+                c: h.init(1).watch([(s) => {
+                    return s.a
+                }, 'b'], ({state, rootState, setState, value, oldVal}) => {
+                    expect(value).toEqual([1, 2])
                     resolve()
                 }),
             }

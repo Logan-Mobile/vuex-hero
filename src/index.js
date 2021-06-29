@@ -28,6 +28,13 @@ function expOrFn2Getter(expOrFn) {
                 return state[expOrFn]
             }
         }
+    } else if (Array.isArray(expOrFn)) {
+        const callBacks = expOrFn.map((exp) => expOrFn2Getter(exp))
+        return (state, rooState) => {
+            return callBacks.map((getter) => {
+                return getter(state, rooState)
+            })
+        }
     } else {
         return expOrFn
     }
@@ -53,24 +60,26 @@ export function createVuexHero(store) {
 
 function checkFn(fn) {
     assert(typeof fn === 'function', 'callback must be a function')
-    // console.assert(typeof fn !== 'function', 'callback must be a function')
 }
 
 function checkGetter(getter) {
     assert(typeof getter === 'function', 'getter must be a function')
-    // console.assert(!getter || typeof getter !== 'function', 'getter must be a function')
 }
 
-function checkExpOrFn(expOrFn) {
-    const type = typeof expOrFn
-    assert((type === 'function' || type === 'string'), 'expOrFn must be a string or function')
-    // console.assert(!(type === 'function' || type === 'string'), 'expOrFn must be a string or function')
+function checkExpOrFn(expOrFn, isDeep) {
+    if (!isDeep && Array.isArray(expOrFn)) {
+        expOrFn.forEach((item) => {
+            checkExpOrFn(item, true)
+        })
+    } else {
+        let type = typeof expOrFn
+        assert((type === 'function' || type === 'string'), 'expOrFn must be a string or function or array')
+    }
 }
 
 function checkRuleOrCB(ruleOrCallBack) {
     const type = typeof ruleOrCallBack
     assert((type === 'function' || type === 'object'), 'expOrFn must be a object or function')
-    // console.assert(!(type === 'function' || type === 'object'), 'expOrFn must be a object or function')
 }
 
 export function createModule(path, module) {
@@ -151,8 +160,7 @@ export function createModule(path, module) {
                                 /**
                                  * watch
                                  * */
-
-                                // 解决unwatch可能为undefined问题
+                                        // 解决unwatch可能为undefined问题
                                 let stopCall = false;
                                 const preUnwatch = () => {
                                     stopCall = true
@@ -262,7 +270,6 @@ export function createModule(path, module) {
 class h {
     static init(initValue) {
         assert(initValue !== undefined, 'initValue can\'t be undefined')
-        // console.assert(initValue === undefined, 'initValue can\'t be undefined')
         return new h(initValue)
     }
 
