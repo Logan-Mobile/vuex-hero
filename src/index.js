@@ -86,21 +86,44 @@ export function createModule(path, module) {
     if (!rootStore) throw new Error(`please call 'createVuexHero' first`);
 
     class Module {
+        #path = ''
         #form = {}
         #module = {}
-        #path = ''
         #unwatches = []
         #observers = {}
         #subModules = []
-
-        constructor(path, module) {
-            this.#path = Array.isArray(path) ? path : path.split('.')
-            this.state = {};
-            this.#initModule(module)
-        }
+        state = {}
 
         get store() {
             return rootStore
+        }
+
+        constructor(path, module) {
+            this.#init(path, module)
+            this.unregisterModule = function () {
+                if (this.store.hasModule(this.#path)) {
+                    this.#subModules.forEach(subM => subM.unregisterModule())
+                    this.#unwatches.forEach((unwatch) => {
+                        unwatch()
+                    })
+                    this.store.unregisterModule(this.#path)
+                }
+                this.#init(path, module)
+                return this
+            }
+        }
+
+        #init(path, module) {
+            this.#path = ''
+            this.#form = {}
+            this.#module = {}
+            this.#unwatches = []
+            this.#observers = {}
+            this.#subModules = []
+            this.state = {}
+
+            this.#path = Array.isArray(path) ? path : path.split('.')
+            this.#initModule(module)
         }
 
         #initModule(module) {
@@ -212,17 +235,6 @@ export function createModule(path, module) {
                 if (!this.store.hasModule(this.#path)) {
                     register()
                 }
-            }
-            return this;
-        }
-
-        unregisterModule() {
-            if (this.store.hasModule(this.#path)) {
-                this.#subModules.forEach(subM => subM.unregisterModule())
-                this.#unwatches.forEach((unwatch) => {
-                    unwatch()
-                })
-                this.store.unregisterModule(this.#path)
             }
             return this;
         }

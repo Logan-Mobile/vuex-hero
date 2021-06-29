@@ -263,3 +263,19 @@ test('unwatch', async () => {
     await wait(10)
     expect(module.state.b).toBe(1)
 })
+
+
+test('unregisterModule', async () => {
+    const module = createModule('unregisterModule', {
+        state: {
+            a: 0,
+        },
+    })
+    module.registerModule(true)
+    await wait(10)
+    module.state.a = 10
+    expect(module.state.a).toBe(10)
+    module.unregisterModule()
+    await wait(10)
+    expect(module.state.a).toBe(0)
+})
