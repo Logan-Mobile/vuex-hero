@@ -11,46 +11,15 @@ npm i vuex-hero
 ## Demo
 
 ```js
-// 第一步：设置rootStore
 import Vue from 'vue'
 import Vuex from 'vuex'
-
-Vue.use(Vuex)
-import {createVuexHero} from 'vuex-hero';
+import h from 'vuex-hero'
+Vue.use(Vuex)             
+// 第一步：Vue.use(h)
+Vue.use(h)
 const store = new Vuex.Store({})
-createVuexHero(store)
-
-
-<template>
-  <div>
-    <el-input v-model="state.name"/>
-    <el-select
-      v-model="state.month"
-      placeholder="请选择月份"
-    >
-      <el-option
-        v-for="(item) in state.monthRange"
-        :key="item"
-        :label="item"
-        :value="item"
-      ></el-option>
-    </el-select>
-    <el-select v-model="state.day" placeholder="请选择日期">
-      <el-option
-        v-for="(item) in state.dayRange"
-        :key="item"
-        :label="item"
-        :value="item"
-      ></el-option>
-    </el-select>
-    <el-button
-      @click="submit"
-    />
-  </div>
-</template>
-
-<script>
-import h, {createModule} from 'vuex-hero'
+// 创建vue实例时vuex-hero会自动获取store
+const vue = new Vue({store})
 
 function getRange(max) {
   let arr = []
@@ -61,7 +30,7 @@ function getRange(max) {
 }
 
 // 第二步：设置创建模块
-const module = createModule('test', {
+const module = h.createModule('test', {
   state: {
     monthRange: h.init([]).load((alley) => {
       const {setState, state, rootState} = alley;
@@ -128,16 +97,16 @@ export default {
   },
   computed: {}
 }
-</script>
 ```
 
 # API
 ## createVuexHero(store)
 设置根Store，无返回值
+- 即将废弃，请使用 `Vue.use(h)`
 - `store`根store
 
 ## h
-为state添加监听方法，设置初始化值，支持链式调用。
+为state添加监听方法，设置初始化值，h实例支持链式调用。
 
 #### h实例方法
 ###### `watch(expOrFn, callBack, options = {immediate: true, deep: false})`
@@ -146,7 +115,7 @@ export default {
 - `callback`回调函数，参数为：`{value,oldVal,setState,state,rootState,unwatch}` 对象
 - `options`可选，请参考 [Vuex.Store.watch](https://vuex.vuejs.org/zh/api/#watch) 
 ```js
-const module = createModule('test', {
+const module = h.createModule('test', {
   state: {
     // 初始化值是个空字符串
     info: h.init(''),
@@ -175,7 +144,7 @@ const module = createModule('test', {
 - `options`可选，请参考 [Vuex.Store.watch](https://vuex.vuejs.org/zh/api/#watch) 
 
 ```js
-const module = createModule('test', {
+const module = h.createModule('test', {
   state: {
     info: h.init('').load(({setState, state, rootState}) => {    
         setTimeout(() => {setState('大家好，我叫张三')},1000)
@@ -187,13 +156,12 @@ const module = createModule('test', {
   }
 })
 ```
-
 ###### `getter(getter, options = {immediate: true, deep: false})`
 - 用于计算属性，本质是将`watch`方法中`expOrFn`的返回值直接赋值给当前state
 - `options`可选，请参考 [Vuex.Store.watch](https://vuex.vuejs.org/zh/api/#watch) 
 
 ```js
-const module = createModule('test', {
+const module = h.createModule('test', {
   state: {
     name:'',
     age:12,
@@ -207,7 +175,7 @@ const module = createModule('test', {
 - 用于异步初始化state
 
 ```js
-const module = createModule('test', {
+const module = h.createModule('test', {
   state: {
     name:h.init('').load(({setState, state, rootState}) =>{
         setTimeout(() => {setState('张三')},1000)
@@ -223,10 +191,13 @@ const module = createModule('test', {
 - 具体使用参考下方 `Module.validate`
 
 #### h静态方法
+###### `createModule(path:string | Array<string>, module:{state:object,mutations?,actions?,getters?,modules?})`
+创建模块，返回`Module`实例对象。
+- `path` ：创建模块的路径 `eg:a.b.c 或者 ['a','b','c']`
+- `module` ：创建模块配置，参考vuex
 ###### `init(initValue)` 
 -  静态方法，返回`h`实例对象，以同步的方式为state指定初始化值
 - `initValue`不能是`undefined`
- 
 ###### `strLoad(callBack)`
 - 等于`h.init('').load(callBack)`
 ###### `arrLoad(callBack)`
@@ -247,9 +218,7 @@ const module = createModule('test', {
 - 等于`h.init('').validate(expOrFn, ruleOrCallBack, formName)`
 
 ## createModule(path:string | Array<string>, module:{state:object,mutations?,actions?,getters?,modules?})
-创建模块，返回Module实例对象。
-- `path` ：创建模块的路径 `eg:a.b.c 或者 ['a','b','c']`
-- `module` ：创建模块配置，参考vuex
+- 即将废弃，请使用`h.createModule()`
  
 ## Module
 
@@ -263,7 +232,7 @@ const module = createModule('test', {
 - 表单验证方法
 
 ```js
-const module = createModule('test', {
+const module = h.createModule('test', {
   state: {
     name: '',
     // validate第二个参数可以是对象或者是回调函数，如果是对象请参考[async-volidator](https://github.com/yiminghe/async-validator)
@@ -289,15 +258,15 @@ module.validate('formAge',(resulet) => {console.log("年龄校验结果：",resu
 
 #### Module实例属性
 ###### `store`
-- 可以获取通过`createVuexHero(store)`设置的store
+- 可以获取vue实例中的store
 
 ###### `state`
-- 本模块配置的`state`
+- 当前模块配置的`state`
 ###### `子模块`
-- 本模块配置的`subModule`
+- 当前模块配置的`subModule`
 
 ```js
-const module = createModule('test', {
+const module = h.createModule('test', {
   state: {
     name: '',
   },
@@ -310,5 +279,4 @@ const module = createModule('test', {
   },
 })
 // 可以通过`module.mySubModule`访问对应的子模块
-
-
+```

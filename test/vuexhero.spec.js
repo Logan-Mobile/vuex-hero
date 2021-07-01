@@ -1,10 +1,12 @@
 import Vuex from 'vuex'
 import Vue from 'vue'
-import h, {createModule, createVuexHero} from '../src/index'
+import h from '../src/index'
 
 Vue.use(Vuex)
-const store = new Vuex.Store({})
-createVuexHero(store)
+Vue.use(h)
+new Vue({
+    store: new Vuex.Store({}),
+})
 
 function wait(time) {
     return new Promise((resolve) => {
@@ -16,7 +18,7 @@ function wait(time) {
 
 test('init with undefined', () => {
     try {
-        createModule('test1', {
+        h.createModule('test1', {
             state: {
                 a: h.init(undefined)
             }
@@ -28,7 +30,7 @@ test('init with undefined', () => {
 
 test('load params', () => {
     try {
-        createModule('loadParams', {
+        h.createModule('loadParams', {
             state: {
                 a: h.init('').load('callback')
             }
@@ -39,7 +41,7 @@ test('load params', () => {
 })
 
 test('load', async () => {
-    const module = createModule('testLoad', {
+    const module = h.createModule('testLoad', {
         state: {
             a: h.init(1).load(({state, rootState, setState}) => {
                 expect(state).toEqual({a: 1})
@@ -55,7 +57,7 @@ test('load', async () => {
 
 test('watch params', () => {
     try {
-        createModule('watchParams', {
+        h.createModule('watchParams', {
             state: {
                 a: h.init('').watch('a')
             }
@@ -64,17 +66,17 @@ test('watch params', () => {
         expect(!!e).toBe(true);
     }
     try {
-        createModule('watchParams1-1', {
+        h.createModule('watchParams1-1', {
             state: {
                 a: h.init('').watch([[]], 'callback')
             }
         })
-        createModule('watchParams1-2', {
+        h.createModule('watchParams1-2', {
             state: {
                 a: h.init('').watch([{}], 'callback')
             }
         })
-        createModule('watchParams1-3', {
+        h.createModule('watchParams1-3', {
             state: {
                 a: h.init('').watch([12], 'callback')
             }
@@ -83,7 +85,7 @@ test('watch params', () => {
         expect(!!e).toBe(true);
     }
     try {
-        createModule('watchParams2', {
+        h.createModule('watchParams2', {
             state: {
                 a: h.init('').watch('a', 'callback')
             }
@@ -95,7 +97,7 @@ test('watch params', () => {
 
 test('watch with exp', async () => {
     return new Promise((resolve) => {
-        const module = createModule('testWatch', {
+        const module = h.createModule('testWatch', {
             state: {
                 a: h.init(1),
                 b: h.init(1).watch('a', ({state, rootState, setState, value, oldVal}) => {
@@ -115,7 +117,7 @@ test('watch with exp', async () => {
 
 test('watch with getter', async () => {
     return new Promise((resolve) => {
-        const module = createModule('testWatch1', {
+        const module = h.createModule('testWatch1', {
             state: {
                 a: h.init(1),
                 b: h.init(1).watch((state, rootState) => {
@@ -135,7 +137,7 @@ test('watch with getter', async () => {
 
 test('watch with array', async () => {
     return new Promise((resolve) => {
-        const module = createModule('testWatch2', {
+        const module = h.createModule('testWatch2', {
             state: {
                 a: 1,
                 b: 2,
@@ -153,7 +155,7 @@ test('watch with array', async () => {
 
 test('watchSelf', async () => {
     return new Promise((resolve) => {
-        const module = createModule('watchSelf', {
+        const module = h.createModule('watchSelf', {
             state: {
                 a: h.init(1),
                 b: h.init(1).watchSelf(({state, rootState, setState, value, oldVal}) => {
@@ -170,7 +172,7 @@ test('watchSelf', async () => {
 })
 
 test('getter', async () => {
-    const module = createModule('getter', {
+    const module = h.createModule('getter', {
         state: {
             a: h.init([1, 2, 3, 4]),
             b: h.init([]).getter((state, rootState) => {
@@ -184,7 +186,7 @@ test('getter', async () => {
 })
 
 test('validate', async () => {
-    const module = createModule('validate', {
+    const module = h.createModule('validate', {
         state: {
             name: h.init('王杰'),
             nameEM: h.init('请输入姓名').validate('name', ({value, setState}) => {
@@ -228,7 +230,7 @@ test('validate', async () => {
 })
 
 test('sub module', async () => {
-    const module = createModule('subModule', {
+    const module = h.createModule('subModule', {
         state: {
             a: h.init(0).watch('subModule.sub.a', ({value, setState}) => {
                 setState(value + 1)
@@ -248,7 +250,7 @@ test('sub module', async () => {
 })
 
 test('unwatch', async () => {
-    const module = createModule('unwatch', {
+    const module = h.createModule('unwatch', {
         state: {
             a: 0,
             b: h.init(0).watch('a', ({value, setState, unwatch}) => {
@@ -266,7 +268,7 @@ test('unwatch', async () => {
 
 
 test('unregisterModule', async () => {
-    const module = createModule('unregisterModule', {
+    const module = h.createModule('unregisterModule', {
         state: {
             a: 0,
         },

@@ -83,8 +83,6 @@ function checkRuleOrCB(ruleOrCallBack) {
 }
 
 export function createModule(path, module) {
-    if (!rootStore) throw new Error(`please call 'createVuexHero' first`);
-
     class Module {
         #path = ''
         #form = {}
@@ -181,9 +179,8 @@ export function createModule(path, module) {
                                 }
 
                                 /**
-                                 * watch
+                                 * watch 解决unwatch可能为undefined问题
                                  * */
-                                        // 解决unwatch可能为undefined问题
                                 let stopCall = false;
                                 const preUnwatch = () => {
                                     stopCall = true
@@ -222,6 +219,7 @@ export function createModule(path, module) {
         }
 
         registerModule(replace) {
+            if (!rootStore) throw new Error(`must call Vue.use(h) and new Vue(options) before registerModule`);
             const register = () => {
                 this.store.registerModule(this.#path, this.#module)
                 this.#beginObserve()
@@ -279,108 +277,111 @@ export function createModule(path, module) {
     return new Module(path, module)
 }
 
-class h {
-    static init(initValue) {
-        assert(initValue !== undefined, 'initValue can\'t be undefined')
-        return new h(initValue)
-    }
-
-    static strLoad(callBack) {
-        checkFn(callBack)
-        return new h('').load(callBack)
-    }
-
-    static arrLoad(callBack) {
-        checkFn(callBack)
-        return new h([]).load(callBack)
-    }
-
-    static strGetter(getter, options = {immediate: true, deep: false}) {
-        checkGetter(getter)
-        return new h('').getter(getter, options)
-    }
-
-    static arrGetter(getter, options = {immediate: true, deep: false}) {
-        checkGetter(getter)
-        return new h([]).getter(getter, options)
-    }
-
-    static strWatch(expOrFn, callBack, options = {immediate: true, deep: false}) {
-        checkExpOrFn(expOrFn)
-        checkFn(callBack)
-        return new h('').watch(expOrFn, callBack, options)
-    }
-
-    static arrWatch(expOrFn, callBack, options = {immediate: true, deep: false}) {
-        checkExpOrFn(expOrFn)
-        checkFn(callBack)
-        return new h([]).watch(expOrFn, callBack, options)
-    }
-
-    static strWatchSelf(callBack, options = {immediate: true, deep: false}) {
-        checkFn(callBack)
-        return new h('').watchSelf(callBack)
-    }
-
-    static arrWatchSelf(callBack, options = {immediate: true, deep: false}) {
-        checkFn(callBack)
-        return new h([]).watchSelf(callBack)
-    }
-
-    static strValidate(expOrFn, ruleOrCallBack, formName) {
-        checkExpOrFn(expOrFn)
-        checkRuleOrCB(ruleOrCallBack)
-        return new h('').validate(expOrFn, ruleOrCallBack, formName)
-    }
-
-    constructor(initValue) {
+function h(initValue) {
+    if (this instanceof h) {
         assert(initValue !== undefined, 'initValue can\'t be undefined')
         this._initValue = initValue;
+        return this
     }
-
-    load(callBack) {
-        checkFn(callBack)
-        pushOperation(this, {callBack, options: {isLoad: true}})
-        return this;
-    }
-
-    getter(getter, options = {immediate: true, deep: false}) {
-        checkGetter(getter)
-        pushOperation(this, {
-            getter, callBack: ({value, setState}) => {
-                setState(value)
-            }, options: {...options, isGetter: true}
-        })
-        return this;
-    }
-
-    watch(expOrFn, callBack, options = {immediate: true, deep: false}) {
-        checkExpOrFn(expOrFn)
-        checkFn(callBack)
-        pushOperation(this, {
-            getter: expOrFn2Getter(expOrFn), callBack, options
-        })
-        return this;
-    }
-
-    watchSelf(callBack, options = {immediate: true, deep: false}) {
-        checkFn(callBack)
-        pushOperation(this, {
-            callBack, options
-        })
-        return this;
-    }
-
-    validate(expOrFn, ruleOrCallBack, formName) {
-        checkExpOrFn(expOrFn)
-        checkRuleOrCB(ruleOrCallBack)
-        pushOperation(this, {
-            getter: expOrFn2Getter(expOrFn),
-            callBack: ruleOrCB2CallBack(ruleOrCallBack),
-            options: {immediate: false, deep: false, isValidation: true, formName: formName || 'noFormName'}
-        })
-        return this;
+    // 神奇的鸭子类型判断
+    if (typeof initValue === 'function' && typeof initValue.prototype._init === 'function') {
+        const Vue = initValue
+        const originInit = Vue.prototype._init;
+        Vue.prototype._init = function (options) {
+            if (options?.store && !rootStore) {
+                createVuexHero(options.store)
+            }
+            return originInit.call(this, options)
+        }
     }
 }
+
+h.prototype.load = function (callBack) {
+    checkFn(callBack)
+    pushOperation(this, {callBack, options: {isLoad: true}})
+    return this;
+}
+
+h.prototype.getter = function (getter, options = {immediate: true, deep: false}) {
+    checkGetter(getter)
+    pushOperation(this, {
+        getter, callBack: ({value, setState}) => {
+            setState(value)
+        }, options: {...options, isGetter: true}
+    })
+    return this;
+}
+
+h.prototype.watch = function (expOrFn, callBack, options = {immediate: true, deep: false}) {
+    checkExpOrFn(expOrFn)
+    checkFn(callBack)
+    pushOperation(this, {
+        getter: expOrFn2Getter(expOrFn), callBack, options
+    })
+    return this;
+}
+
+h.prototype.watchSelf = function (callBack, options = {immediate: true, deep: false}) {
+    checkFn(callBack)
+    pushOperation(this, {
+        callBack, options
+    })
+    return this;
+}
+
+h.prototype.validate = function (expOrFn, ruleOrCallBack, formName) {
+    checkExpOrFn(expOrFn)
+    checkRuleOrCB(ruleOrCallBack)
+    pushOperation(this, {
+        getter: expOrFn2Getter(expOrFn),
+        callBack: ruleOrCB2CallBack(ruleOrCallBack),
+        options: {immediate: false, deep: false, isValidation: true, formName: formName || 'noFormName'}
+    })
+    return this;
+}
+
+h.init = function (initValue) {
+    assert(initValue !== undefined, 'initValue can\'t be undefined')
+    return new h(initValue)
+}
+
+h.strLoad = function (callBack) {
+    checkFn(callBack)
+    return new h('').load(callBack)
+}
+
+h.arrLoad = function (callBack) {
+    checkFn(callBack)
+    return new h([]).load(callBack)
+}
+
+h.strGetter = function (getter, options = {immediate: true, deep: false}) {
+    checkGetter(getter)
+    return new h('').getter(getter, options)
+}
+
+h.arrGetter = function (getter, options = {immediate: true, deep: false}) {
+    checkGetter(getter)
+    return new h([]).getter(getter, options)
+}
+
+h.strWatch = function (expOrFn, callBack, options = {immediate: true, deep: false}) {
+    checkExpOrFn(expOrFn)
+    checkFn(callBack)
+    return new h('').watch(expOrFn, callBack, options)
+}
+
+h.arrWatch = function (expOrFn, callBack, options = {immediate: true, deep: false}) {
+    checkExpOrFn(expOrFn)
+    checkFn(callBack)
+    return new h([]).watch(expOrFn, callBack, options)
+}
+
+h.strWatchSelf = function (callBack, options = {immediate: true, deep: false}) {
+    checkFn(callBack)
+    return new h('').watchSelf(callBack)
+}
+
+h.createModule = createModule
 
 export default h

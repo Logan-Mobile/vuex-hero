@@ -23,6 +23,8 @@ export interface Module {
 }
 
 declare class h {
+    static createModule(path: string | [], module: object): Module
+
     static init(initValue: any): h
 
     static strLoad<S extends object, T extends any>(cb: (alley: Alley) => void): h
