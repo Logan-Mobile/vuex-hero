@@ -35,7 +35,17 @@ export default {
     babel({
       runtimeHelpers: true,
       exclude: "node_modules/**",
-      externalHelpers: true
+      externalHelpers: true,
+      "presets": [
+        ['@babel/preset-env', {
+          modules: false,
+          targets: {
+            ie: 9,
+            browsers: 'last 2 versions'
+          },
+          useBuiltIns: 'usage'
+        }]
+      ]
     }),
     buble({ transforms: { dangerousForOf: true } }),
     resolve(),
